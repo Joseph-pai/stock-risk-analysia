@@ -433,6 +433,32 @@
         }
     }
 
+    /* ── 決策按鈕大圖示樣式 ── */
+    .decision-trigger-btn {
+        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+        color: white;
+        border: none;
+        border-radius: 50px;
+        padding: 20px 45px;
+        font-size: 1.4rem;
+        font-weight: 900;
+        cursor: pointer;
+        box-shadow: 0 10px 20px -5px rgba(37, 99, 235, 0.4);
+        transition: all 0.3s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 12px;
+        text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .decision-trigger-btn:hover {
+        transform: translateY(-3px) scale(1.02);
+        box-shadow: 0 15px 25px -5px rgba(37, 99, 235, 0.5);
+        background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%);
+    }
+    .decision-trigger-btn:active {
+        transform: translateY(1px);
+    }
+
     /* ====== 持倉/空倉決策面板樣式 (視覺優化版) ====== */
     .decision-panel { 
         margin-top: 30px; 
