@@ -484,55 +484,73 @@
     .tp-diff.up   { background: #fee2e2; color: #b91c1c; }
     .tp-diff.down { background: #dcfce7; color: #15803d; }
 
-    /* 空倉檢查清單 - 加大文字反差 */
+    /* 空倉檢查清單 - 網格化與卡片化 */
+    .check-list-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 15px;
+        padding: 20px;
+    }
+    
     .check-item {
-        display: flex; align-items: center; gap: 15px;
-        padding: 18px 20px; border-bottom: 1px solid #f1f5f9;
-        transition: background 0.2s;
+        display: flex; align-items: flex-start; gap: 15px;
+        padding: 20px; border: 1px solid #e2e8f0;
+        border-radius: 12px; background: #ffffff;
+        transition: all 0.2s;
+        height: 100%;
     }
-    .check-item:hover { background: #f8fafc; }
-    .check-item:last-child { border-bottom: none; }
-    .check-icon { font-size: 1.6rem; min-width: 35px; }
-    .check-label { font-weight: 800; font-size: 1.1rem; color: #1e293b; }
-    .check-detail { font-size: 1rem; color: #475569; margin-top: 4px; font-weight: 500; }
+    .check-item:hover { transform: translateY(-3px); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); border-color: #cbd5e1; }
+    
+    .check-icon { font-size: 2.2rem; min-width: 45px; }
+    .check-label { font-weight: 900; font-size: 1.25rem; color: #0f172a; margin-bottom: 5px; }
+    .check-detail { font-size: 1.05rem; color: #475569; margin-top: 4px; font-weight: 600; line-height: 1.4; }
 
-    /* 籌碼面 - 橫向佈局優化 */
-    .chips-stat { 
-        display: flex; justify-content: space-between; align-items: center; 
-        padding: 15px 20px; border-bottom: 1px solid #f1f5f9; 
+    /* 籌碼面 - 區塊化優化 */
+    #chipsSectionContent {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+        gap: 15px;
+        padding: 20px;
     }
-    .chips-stat:last-child { border-bottom: none; }
-    .chips-name  { font-size: 1.1rem; font-weight: 700; color: #334155; }
-    .chips-value { font-weight: 900; font-size: 1.25rem; }
-    .chips-value.pos { color: #dc2626; } /* 台股紅 */
-    .chips-value.neg { color: #2563eb; } /* 台股藍/綠 */
+
+    .chips-stat { 
+        display: flex; flex-direction: column; justify-content: center;
+        padding: 20px; border: 1px solid #e2e8f0; 
+        border-radius: 12px; background: #ffffff;
+        min-height: 100px;
+    }
+    .chips-stat:hover { background: #f8fafc; }
+    
+    .chips-name  { font-size: 1.2rem; font-weight: 800; color: #334155; margin-bottom: 10px; }
+    .chips-value { font-weight: 950; font-size: 1.8rem; display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+    .chips-value small { font-size: 1rem; font-weight: 700; color: #64748b; }
+    .chips-value.pos { color: #dc2626; }
+    .chips-value.neg { color: #2563eb; }
     
     .chips-retry-btn {
-        background: #ffffff; border: 2px solid #cbd5e1; border-radius: 8px;
-        color: #475569; font-size: 0.95rem; font-weight: 700; padding: 6px 15px; cursor: pointer;
-        transition: all 0.2s;
+        background: #ffffff; border: 2px solid #cbd5e1; border-radius: 10px;
+        color: #1e293b; font-size: 1.1rem; font-weight: 800; padding: 10px 20px; cursor: pointer;
+        transition: all 0.2s; width: 100%; margin-top: 10px;
     }
-    .chips-retry-btn:hover { border-color: #64748b; background: #f1f5f9; }
+    .chips-retry-btn:hover { background: #0f172a; color: #ffffff; border-color: #0f172a; }
 
     /* 綜合建議 - 加大反差 */
     .recommendation-box {
-        border-radius: 16px; padding: 30px;
-        font-size: 1.15rem; line-height: 1.8; border: 2px solid;
+        border-radius: 16px; padding: 35px;
+        font-size: 1.3rem; line-height: 1.8; border: 3px solid;
     }
     .rec-hold    { background: #f0fdf4; border-color: #22c55e; color: #166534; }
     .rec-watch   { background: #fefce8; border-color: #eab308; color: #854d0e; }
     .rec-reduce  { background: #fff7ed; border-color: #f97316; color: #9a3412; }
     .rec-exit    { background: #fef2f2; border-color: #ef4444; color: #991b1b; }
-    .rec-title   { font-size: 1.75rem; font-weight: 900; margin-bottom: 15px; display: flex; align-items: center; gap: 10px; }
-
-    /* 大標題 */
-    .decision-main-title {
-        font-size: 2.2rem; font-weight: 900; color: #0f172a; margin-bottom: 25px;
-        display: flex; align-items: center; gap: 15px; text-shadow: 0 1px 2px rgba(0,0,0,0.05);
-    }
+    .rec-title   { font-size: 2rem; font-weight: 950; margin-bottom: 20px; display: flex; align-items: center; gap: 15px; }
     
-    /* 輔助說明小文字也加大 */
-    .alert-light { font-size: 1rem; border-radius: 12px; background: #f8fafc; border: 1px solid #e2e8f0; color: #475569; font-weight: 500; }
+    @media (max-width: 768px) {
+        .check-list-container, #chipsSectionContent {
+            grid-template-columns: 1fr;
+        }
+        .decision-main-title { font-size: 1.6rem; }
+    }
     </style>
 </head>
 <body>
