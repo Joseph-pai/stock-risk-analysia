@@ -1,0 +1,68 @@
+[build]
+  # 靜態檔案發布目錄
+  publish = "/"
+  # Netlify Functions 的目錄
+  functions = "netlify/functions"
+
+# 函數全域設定區塊
+[functions]
+  # 移除 top-level 的 timeout 設定，因為它必須位於子表格內
+
+# 函數預設設定子表格 (此為設定所有 Functions 的執行逾時時間)
+[functions."*"]
+  # 函數的執行時間限制 (單位為秒)。
+  # 設定為 30 秒，確保 AI 分析有足夠時間
+  timeout = 30
+  
+# 設定 /api/* 請求代理到我們的 Functions 裡
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/:splat"
+  status = 200
+  force = true
+
+# 添加TPEx API路由
+[[redirects]]
+  from = "/tpex-api/*"
+  to = "/.netlify/functions/fetch-tpex"
+  status = 200
+  force = true
+
+# 錯誤頁面配置
+[[redirects]]
+  from = "/*"
+  status = 404
+  to = "/404.html"
+
+# 安全標頭設置
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-XSS-Protection = "1; mode=block"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+
+# 壓縮設定
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# API 路由的特殊處理
+[[headers]]
+  for = "/.netlify/functions/*"
+  [headers.values]
+    Access-Control-Allow-Origin = "*"
+    Access-Control-Allow-Headers = "Content-Type, Authorization"
+    Access-Control-Allow-Methods = "GET, POST, OPTIONS"
+    Cache-Control = "no-cache, no-store, must-revalidate"
+
+# 添加TPEx API的特殊頭部設置
+[[headers]]
+  for = "/.netlify/functions/fetch-tpex"
+  [headers.values]
+    Access-Control-Allow-Origin = "*"
+    Access-Control-Allow-Headers = "Content-Type"
+    Access-Control-Allow-Methods = "GET, POST, OPTIONS"
+    Cache-Control = "no-cache, no-store, must-revalidate"
