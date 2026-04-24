@@ -1,6 +1,6 @@
 {
-  "name": "台股風險分析系統",
-  "short_name": "風險分析",
+  "name": "台股風險分析AI助手",
+  "short_name": "台股風險分析AI助手",
   "description": "提供台股個股風險分析與持倉/空倉決策參考",
   "start_url": "./index.html",
   "display": "standalone",
