@@ -12,7 +12,8 @@ exports.handler = async (event, context) => {
     }
 
     const stockId = event.queryStringParameters?.stock_id;
-    const token   = event.queryStringParameters?.token || '';
+    // 優先讀取環境變數中的 Token，其次才是網址參數
+    const token = process.env.FINMIND_TOKEN || process.env.TOKEN || event.queryStringParameters?.token || '';
     const dataType = event.queryStringParameters?.data_type || 'margin'; // margin | institutional
 
     if (!stockId) {
