@@ -1,0 +1,16 @@
+{
+  "name": "台股風險分析系統",
+  "short_name": "風險分析",
+  "description": "提供台股個股風險分析與持倉/空倉決策參考",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a",
+  "icons": [
+    {
+      "src": "icon.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
