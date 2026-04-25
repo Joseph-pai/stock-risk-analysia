@@ -79,8 +79,8 @@ async function fetchMarginData(stockId, token) {
             start.setDate(start.getDate() - 30);
             const startStr = start.toISOString().split('T')[0];
 
-            const url = `https://api.finmindtrade.com/api/v4/data?dataset=TaiwanStockMarginPurchaseShortSale&data_id=${stockId}&start_date=${startStr}&token=${token}`;
-            const res = await fetch(url, { timeout: 10000 });
+            const url = `https://api.finmindtrade.com/api/v4/data?dataset=TaiwanStockMarginPurchaseShortSale&data_id=${stockId}&start_date=${startStr}`;
+            const res = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` }, timeout: 10000 });
 
             if (res.ok) {
                 const json = await res.json();
@@ -89,14 +89,14 @@ async function fetchMarginData(stockId, token) {
                     const latest = sorted[0];
                     const prev   = sorted[1] || null;
 
-                    const balance = parseInt(latest.MarginPurchaseBalance) || 0;
-                    const prevBal = prev ? (parseInt(prev.MarginPurchaseBalance) || 0) : balance;
+                    const balance = parseInt(latest.MarginPurchaseTodayBalance) || 0;
+                    const prevBal = prev ? (parseInt(prev.MarginPurchaseTodayBalance) || 0) : balance;
                     const change  = balance - prevBal;
 
                     // 趨勢：取最近 5 筆
                     let trend = 'stable';
                     if (sorted.length >= 3) {
-                        const vals = sorted.slice(0, 5).map(d => parseInt(d.MarginPurchaseBalance) || 0);
+                        const vals = sorted.slice(0, 5).map(d => parseInt(d.MarginPurchaseTodayBalance) || 0);
                         const up   = vals.every((v, i) => i === 0 || v >= vals[i - 1]);
                         const down = vals.every((v, i) => i === 0 || v <= vals[i - 1]);
                         if (up)   trend = 'increasing';
@@ -163,8 +163,8 @@ async function fetchInstitutionalData(stockId, token) {
             start.setDate(start.getDate() - 20);
             const startStr = start.toISOString().split('T')[0];
 
-            const url = `https://api.finmindtrade.com/api/v4/data?dataset=TaiwanStockInstitutionalInvestors&data_id=${stockId}&start_date=${startStr}&token=${token}`;
-            const res = await fetch(url, { timeout: 10000 });
+            const url = `https://api.finmindtrade.com/api/v4/data?dataset=TaiwanStockInstitutionalInvestorsBuySell&data_id=${stockId}&start_date=${startStr}`;
+            const res = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` }, timeout: 10000 });
 
             if (res.ok) {
                 const json = await res.json();
