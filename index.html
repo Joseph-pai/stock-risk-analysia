@@ -4550,11 +4550,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 <span>${fmtNet(d.foreign_net)}${fmtConsecutive(d.foreign_consecutive)}</span>
             </div>
             <div class="chips-stat">
-                <span class="chips-name">投信買賣超</span>
+                <span class="chips-name">投信買賣超 ${srcBadge(institutional.source)}</span>
                 <span>${fmtNet(d.trust_net)}${fmtConsecutive(d.trust_consecutive)}</span>
             </div>
             <div class="chips-stat">
-                <span class="chips-name">自營商買賣超</span>
+                <span class="chips-name">自營商買賣超 ${srcBadge(institutional.source)}</span>
                 <span>${fmtNet(d.dealer_net)}</span>
             </div>`;
         } else {
@@ -4592,7 +4592,7 @@ document.addEventListener('DOMContentLoaded', () => {
             let icon = '';
 
             if (chipScore >= 1) {
-                recText = '持倉 (Hold) - 法人資金進駐或籌碼安定';
+                recText = '買進/持倉 (Buy/Hold) - 法人資金進駐或籌碼安定';
                 alertClass = 'alert-success';
                 icon = '🟢';
             } else if (chipScore === 0) {

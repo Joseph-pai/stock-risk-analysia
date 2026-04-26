@@ -177,9 +177,9 @@ async function fetchInstitutionalData(stockId, token) {
                     latestRows.forEach(row => {
                         const net = (parseInt(row.buy) || 0) - (parseInt(row.sell) || 0);
                         const n   = (row.name || '').toLowerCase();
-                        if (n.includes('foreign') || n.includes('外資')) foreignNet = net;
-                        else if (n.includes('trust') || n.includes('投信'))   trustNet   = net;
-                        else if (n.includes('dealer') || n.includes('自營'))  dealerNet  = net;
+                        if (n.includes('foreign') || n.includes('外資')) foreignNet += net;
+                        else if (n.includes('trust') || n.includes('投信'))   trustNet   += net;
+                        else if (n.includes('dealer') || n.includes('自營'))  dealerNet  += net;
                     });
 
                     // 計算連續買賣天數
@@ -193,10 +193,13 @@ async function fetchInstitutionalData(stockId, token) {
                         });
                         const dates = Object.keys(byDate).sort().reverse();
                         if (dates.length === 0) return 0;
-                        const firstDir = byDate[dates[0]] >= 0 ? 1 : -1;
+                        const firstNet = byDate[dates[0]];
+                        if (firstNet === 0) return 0; // 0張則中斷連續
+                        const firstDir = firstNet > 0 ? 1 : -1;
                         let count = 0;
                         for (const dt of dates) {
-                            const dir = byDate[dt] >= 0 ? 1 : -1;
+                            const net = byDate[dt];
+                            const dir = net > 0 ? 1 : (net < 0 ? -1 : 0);
                             if (dir === firstDir) count += firstDir;
                             else break;
                         }
@@ -240,9 +243,9 @@ async function fetchInstitutionalData(stockId, token) {
                     const parseNum = (s) => parseInt(String(s || '0').replace(/,/g, '').replace(/[−‐]/g, '-')) || 0;
                     const name = String(row[0] || '');
                     const net  = parseNum(row[3]);
-                    if (name.includes('外資'))       foreignNet = net;
-                    else if (name.includes('投信'))  trustNet   = net;
-                    else if (name.includes('自營'))  dealerNet  = net;
+                    if (name.includes('外資'))       foreignNet += net;
+                    else if (name.includes('投信'))  trustNet   += net;
+                    else if (name.includes('自營'))  dealerNet  += net;
                 });
 
                 return {
