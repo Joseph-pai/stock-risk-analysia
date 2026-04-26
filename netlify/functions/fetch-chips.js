@@ -97,8 +97,10 @@ async function fetchMarginData(stockId, token) {
                     let trend = 'stable';
                     if (sorted.length >= 3) {
                         const vals = sorted.slice(0, 5).map(d => parseInt(d.MarginPurchaseTodayBalance) || 0);
-                        const up   = vals.every((v, i) => i === 0 || v >= vals[i - 1]);
-                        const down = vals.every((v, i) => i === 0 || v <= vals[i - 1]);
+                        const isAllEqual = vals.every(v => v === vals[0]);
+                        // vals[0] 是最新，vals[1] 是前一天。增加代表 vals[0] >= vals[1]
+                        const up   = !isAllEqual && vals.every((v, i) => i === 0 || vals[i - 1] >= v);
+                        const down = !isAllEqual && vals.every((v, i) => i === 0 || vals[i - 1] <= v);
                         if (up)   trend = 'increasing';
                         if (down) trend = 'decreasing';
                     }
