@@ -550,8 +550,31 @@
         padding: 20px; border: 1px solid #e2e8f0; 
         border-radius: 12px; background: #ffffff;
         min-height: 100px;
+        position: relative;
     }
     .chips-stat:hover { background: #f8fafc; }
+    
+    .explanation-btn {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        font-size: 0.8rem;
+        font-weight: bold;
+        color: #475569;
+        background: #f1f5f9;
+        padding: 5px 10px;
+        border-radius: 20px;
+        cursor: pointer;
+        transition: all 0.2s;
+        border: 1px solid #cbd5e1;
+        z-index: 10;
+    }
+    .explanation-btn:hover {
+        background: #e2e8f0;
+        color: #0f172a;
+        transform: translateY(-1px);
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
     
     .chips-name  { font-size: 1.2rem; font-weight: 800; color: #334155; margin-bottom: 10px; }
     .chips-value { font-weight: 950; font-size: 1.8rem; display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
@@ -4521,6 +4544,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const changeSign = d.margin_change >= 0 ? '+' : '';
             html += `
             <div class="chips-stat">
+                <span class="explanation-btn" onclick="showExplanation('margin_balance')">💡 判斷說明</span>
                 <span class="chips-name">融資餘額 ${srcBadge(margin.source)}</span>
                 <span class="chips-value ${d.margin_change > 0 ? 'pos' : d.margin_change < 0 ? 'neg' : 'neu'}">
                     ${d.margin_balance.toLocaleString()} 張
@@ -4528,6 +4552,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 </span>
             </div>
             <div class="chips-stat">
+                <span class="explanation-btn" onclick="showExplanation('margin_trend')">💡 判斷說明</span>
                 <span class="chips-name">融資趨勢 <small class="text-muted">（近5日）</small></span>
                 <span>${fmtTrend(d.margin_trend)}</span>
             </div>`;
@@ -4546,14 +4571,17 @@ document.addEventListener('DOMContentLoaded', () => {
             const d = institutional.data;
             html += `
             <div class="chips-stat">
+                <span class="explanation-btn" onclick="showExplanation('foreign')">💡 判斷說明</span>
                 <span class="chips-name">外資買賣超 ${srcBadge(institutional.source)}</span>
                 <span>${fmtNet(d.foreign_net)}${fmtConsecutive(d.foreign_consecutive)}</span>
             </div>
             <div class="chips-stat">
+                <span class="explanation-btn" onclick="showExplanation('trust')">💡 判斷說明</span>
                 <span class="chips-name">投信買賣超 ${srcBadge(institutional.source)}</span>
                 <span>${fmtNet(d.trust_net)}${fmtConsecutive(d.trust_consecutive)}</span>
             </div>
             <div class="chips-stat">
+                <span class="explanation-btn" onclick="showExplanation('dealer')">💡 判斷說明</span>
                 <span class="chips-name">自營商買賣超 ${srcBadge(institutional.source)}</span>
                 <span>${fmtNet(d.dealer_net)}</span>
             </div>`;
@@ -5726,6 +5754,74 @@ document.addEventListener('DOMContentLoaded', () => {
     // 開始初始化
     initialize();
 });
+</script>
+
+<!-- 判斷說明 Modal -->
+<div class="modal fade" id="explanationModal" tabindex="-1" aria-labelledby="explanationModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content text-dark">
+      <div class="modal-header bg-light">
+        <h5 class="modal-title fw-bold" id="explanationModalLabel">判斷說明</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body" id="explanationModalBody" style="line-height: 1.6; font-size: 1.05rem;">
+        <!-- 內容動態插入 -->
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const explanations = {
+    'margin_trend': `
+        <ul class="ps-3 mb-0">
+            <li class="mb-3"><strong class="text-danger">持續減少（籌碼安定）：</strong><br>代表散戶這幾天正在連續賣出股票或停損出場。這些散戶賣掉的股票通常是被法人（外資或投信）接走了。散戶減少代表「籌碼變得乾淨安定」，未來股價上漲的阻力較小，被視為偏多的正面訊號。</li>
+            <li class="mb-3"><strong class="text-primary">連續增加（散戶浮額增）：</strong><br>代表散戶這幾天正在大量借錢買進這檔股票。如果這時候股價沒有跟著明顯上漲，代表法人可能在倒貨給散戶接盤。一旦股價下跌，這些借錢的散戶很容易因為恐慌而「多殺多」，風險較高，被視為偏空的負面訊號。</li>
+            <li><strong>持平：</strong><br>代表近5天內融資沒有明顯連續增加或減少的趨勢，散戶動向不明顯。</li>
+        </ul>
+    `,
+    'margin_balance': `
+        <p>融資餘額代表散戶借錢買進該股票的總張數。餘額越高代表散戶看多，但也代表潛在的賣壓（浮額）較重。</p>
+        <ul class="ps-3 mb-0">
+            <li class="mb-2">若融資在高檔且股價不漲，需小心多殺多風險。</li>
+            <li>若融資減少且股價上漲，代表籌碼流向法人，為偏多訊號。</li>
+        </ul>
+    `,
+    'foreign': `
+        <p>外資通常具有資金龐大、操作週期較長的特性。</p>
+        <ul class="ps-3 mb-0">
+            <li class="mb-2"><strong class="text-danger">連續買超：</strong>（連買大於3天）通常代表看好該公司基本面或整體趨勢，為強烈的偏多訊號。</li>
+            <li><strong class="text-primary">連續賣超：</strong>代表外資正在撤出，建議避開或適度減碼。</li>
+        </ul>
+    `,
+    'trust': `
+        <p>投信（國內基金）操作多追求波段績效，且有季底/年底作帳的特性。</p>
+        <p class="mb-0">投信連續買超（特別是中小型股）通常代表可能會有波段行情，是尋找飆股與跟單的重要參考指標。</p>
+    `,
+    'dealer': `
+        <p>自營商（券商自有資金）操作偏向極短線，多為避險或短線套利。</p>
+        <p class="mb-0">單看自營商的買賣超參考價值相對較低，但若三大法人同步買超（法人共振），則代表極強的多方共識。</p>
+    `
+};
+
+const explanationTitles = {
+    'margin_trend': '💡 融資趨勢（近5日）判斷說明',
+    'margin_balance': '💡 融資餘額判斷說明',
+    'foreign': '💡 外資買賣超判斷說明',
+    'trust': '💡 投信買賣超判斷說明',
+    'dealer': '💡 自營商買賣超判斷說明'
+};
+
+window.showExplanation = function(type) {
+    const titleEl = document.getElementById('explanationModalLabel');
+    const bodyEl = document.getElementById('explanationModalBody');
+    if (titleEl && bodyEl && explanations[type]) {
+        titleEl.textContent = explanationTitles[type] || '判斷說明';
+        bodyEl.innerHTML = explanations[type];
+        const modal = new bootstrap.Modal(document.getElementById('explanationModal'));
+        modal.show();
+    }
+}
 </script>
 </body>
 </html>
