@@ -4567,6 +4567,64 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>`;
         }
 
+        // 籌碼面綜合評分與建議邏輯
+        let chipScore = 0;
+        let reasons = [];
+
+        if (institutional.success) {
+            const d = institutional.data;
+            if (d.foreign_consecutive >= 3) { chipScore += 1; reasons.push('外資連續買超'); }
+            if (d.foreign_consecutive <= -3) { chipScore -= 1; reasons.push('外資連續賣超'); }
+            if (d.trust_consecutive >= 2) { chipScore += 1; reasons.push('投信連續買超'); }
+            if (d.trust_consecutive <= -2) { chipScore -= 1; reasons.push('投信連續賣超'); }
+        }
+
+        if (margin.success) {
+            const d = margin.data;
+            if (d.margin_trend === 'decreasing') { chipScore += 1; reasons.push('融資持續減少(籌碼安定)'); }
+            if (d.margin_trend === 'increasing') { chipScore -= 1; reasons.push('融資連續增加(散戶浮額增)'); }
+        }
+
+        // 生成建議 UI
+        if (institutional.success || margin.success) {
+            let recText = '';
+            let alertClass = '';
+            let icon = '';
+
+            if (chipScore >= 1) {
+                recText = '持倉 (Hold) - 法人資金進駐或籌碼安定';
+                alertClass = 'alert-success';
+                icon = '🟢';
+            } else if (chipScore === 0) {
+                recText = '觀望 (Watch) - 多空訊號抵銷或不明確，建議觀察後續法人動向';
+                alertClass = 'alert-secondary';
+                icon = '⚪';
+            } else if (chipScore === -1) {
+                recText = '減倉 (Reduce) - 法人出現倒貨跡象或散戶過度集中，建議適度減碼';
+                alertClass = 'alert-warning';
+                icon = '🟡';
+            } else {
+                recText = '空倉 (Empty) - 法人連續倒貨且散戶接盤，風險極高，建議空倉或停損';
+                alertClass = 'alert-danger';
+                icon = '🔴';
+            }
+
+            const reasonsHtml = reasons.length > 0 
+                ? `<ul class="mb-2 mt-2 pl-3"><li>${reasons.join('</li><li>')}</li></ul>`
+                : '<p class="mb-2 mt-2 text-muted">無明顯籌碼動向</p>';
+
+            html += `
+            <div class="p-3 w-100" style="grid-column: 1 / -1;">
+                <div class="alert ${alertClass} mb-0 border shadow-sm">
+                    <h5 class="alert-heading fw-bold mb-2">${icon} 籌碼面綜合建議：${recText.split(' - ')[0]}</h5>
+                    <div class="fw-bold text-dark mb-1">判斷理由：</div>
+                    ${reasonsHtml}
+                    <hr class="my-2">
+                    <p class="mb-0 small"><strong>具體建議：</strong>${recText.split(' - ')[1]}</p>
+                </div>
+            </div>`;
+        }
+
         container.innerHTML = html;
     }
 
@@ -4853,11 +4911,6 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="card card-accent-info">
                 <div class="card-header">📋 籌碼面數據（融資餘額 ＆ 三大法人）</div>
                 <div class="card-body p-0">
-                    <div class="px-4 pt-3 pb-2">
-                        <div class="alert alert-light py-2">
-                            <small>💡 外資連買 3 天以上為正面訊號；融資上升但股價不漲則需注意風險。</small>
-                        </div>
-                    </div>
                     <div id="chipsSectionContent"></div>
                 </div>
             </div>
