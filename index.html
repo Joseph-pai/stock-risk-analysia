@@ -3534,7 +3534,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 // 直接選定股票，不需要再按任何確認鍵
                 suggestionsContainer.style.display = 'none';
                 const searchInput = document.getElementById('searchStockInput');
-                if (searchInput) searchInput.value = suggestion.code;
+                if (searchInput) searchInput.value = `${suggestion.code} ${suggestion.name}`;
                 await selectStock(suggestion.code, suggestion.name, suggestion.type);
             });
             
@@ -3629,13 +3629,18 @@ document.addEventListener('DOMContentLoaded', () => {
         // 先在清單中模糊查詢
         const searchResults = performEnhancedFuzzySearch(searchTerm);
 
-        if (searchResults.length === 1) {
-            // 唯一結果 → 直接選定
-            await selectStock(searchResults[0].code, searchResults[0].name, searchResults[0].type);
-        } else if (searchResults.length > 1) {
-            // 多個結果 → 顯示建議下拉讓用戶點選
-            showSearchSuggestions(searchTerm);
-            showToast(`找到 ${searchResults.length} 個匹配結果，請點選一個`, 'info');
+        if (searchResults.length > 0) {
+            // 如果最高分結果是完全符合 (score >= 95)，或者是唯一結果，直接選定
+            if (searchResults.length === 1 || searchResults[0].score >= 95) {
+                const bestMatch = searchResults[0];
+                const searchInput = document.getElementById('searchStockInput');
+                if (searchInput) searchInput.value = `${bestMatch.code} ${bestMatch.name}`;
+                await selectStock(bestMatch.code, bestMatch.name, bestMatch.type);
+            } else {
+                // 多個部分匹配結果 → 顯示建議下拉讓用戶點選
+                showSearchSuggestions(searchTerm);
+                showToast(`找到 ${searchResults.length} 個匹配結果，請點選一個`, 'info');
+            }
         } else {
             // 清單中無結果 → 嘗試提取四位數代碼直接偵測
             let stockCode = searchTerm;
