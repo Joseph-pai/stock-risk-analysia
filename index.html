@@ -92,6 +92,32 @@
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
             display: none;
         }
+        .recent-search-tags {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 6px;
+            min-height: 28px;
+        }
+        .recent-tag-label {
+            color: rgba(255,255,255,0.6);
+            font-size: 0.78rem;
+            white-space: nowrap;
+        }
+        .recent-tag {
+            border: none;
+            border-radius: 20px;
+            padding: 3px 10px;
+            font-size: 0.78rem;
+            cursor: pointer;
+            transition: opacity 0.15s, transform 0.1s;
+            font-weight: 600;
+        }
+        .recent-tag:hover { opacity: 0.85; transform: scale(1.04); }
+        .tag-listed { background: #3b82f6; color: white; }
+        .tag-otc    { background: #06b6d4; color: white; }
+        .tag-emerging { background: #f59e0b; color: white; }
+
         .search-suggestion-item {
             padding: 8px 12px;
             cursor: pointer;
@@ -668,42 +694,33 @@
                         </div>
                     </div>
 
-                    <!-- 修改後的版面順序 -->
-                    <!-- 1、輸入代碼或名稱搜尋 -->
-                    <div class="row g-3 mb-4">
-                        <div class="col-md-8">
-                            <label class="form-label text-white-50"><strong>1. 輸入代碼或名稱搜尋</strong></label>
+                    <!-- 搜尋框：鍵入即搜，點擊建議直接選定 -->
+                    <div class="row g-3 mb-2">
+                        <div class="col-md-12">
+                            <label class="form-label text-white-50"><strong>🔍 搜尋股票（輸入代碼或名稱）</strong></label>
                             <div class="input-group position-relative">
-                                <input type="text" id="searchStockInput" class="form-control" placeholder="輸入代碼或名稱搜尋...">
+                                <input type="text" id="searchStockInput" class="form-control" placeholder="輸入股票代碼或公司名稱..."
+                                    autocomplete="off">
                                 <button class="btn btn-danger text-white fw-bold" id="confirmSearchBtn">確認</button>
                                 <!-- 模糊查詢建議下拉選單 -->
                                 <div id="searchSuggestions" class="search-suggestions"></div>
                             </div>
-                            <small class="text-white-50 d-block mt-1">輸入股票代碼或公司名稱，點擊"確認"進行即時搜尋</small>
+                            <small class="text-white-50 d-block mt-1">點擊建議清單直接選定，或輸入完整代碼後按「確認」</small>
                         </div>
                     </div>
 
-                    <!-- 2、選擇股票 -->
-                    <div class="row g-3 mb-4">
-                        <div class="col-md-8">
-                            <label class="form-label text-white-50"><strong>2. 選擇股票</strong></label>
-                            <select id="stockSelect" class="form-select" required>
-                                <option value="">請選擇或搜尋股票</option>
-                            </select>
-                            <div id="stockSelectLoading" class="mt-2" style="display: none;">
-                                <small class="text-warning"><span class="loading-spinner"></span> 載入股票清單中...</small>
+                    <!-- 最近搜尋 / 熱門股票標籤列 -->
+                    <div class="row g-2 mb-3">
+                        <div class="col-md-12">
+                            <div id="recentSearchTags" class="recent-search-tags">
+                                <!-- 由 JS 動態產生標籤 -->
                             </div>
                         </div>
-                        <div class="col-md-4">
-                            <label class="form-label text-white-50"><strong>3. 確認</strong></label>
-                            <button class="btn btn-primary text-white fw-bold w-100" id="confirmSelectionBtn">確認選擇</button>
-                        </div>
                     </div>
 
-                    <!-- 4、選擇類股（僅上市公司可用） -->
                     <div class="row g-3 mb-4" id="categorySection">
                         <div class="col-md-8">
-                            <label class="form-label text-white-50"><strong>4. 選擇類股（僅上市公司可用）</strong></label>
+                            <label class="form-label text-white-50"><strong>📂 類股選擇（僅上市公司可用）</strong></label>
                             <select id="stockCategory" class="form-select">
                                 <option value="all">全部類股</option>
                             </select>
@@ -711,35 +728,10 @@
                         </div>
                     </div>
 
-                    <!-- 5、選擇股票（上市公司） -->
-                    <div class="row g-3 mb-4">
-                        <div class="col-md-8">
-                            <label class="form-label text-white-50"><strong>5. 選擇股票（上市公司）</strong></label>
-                            <select id="listedStockSelect" class="form-select">
-                                <option value="">請先選擇類股</option>
-                            </select>
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label text-white-50"><strong>6. 確認</strong></label>
-                            <button class="btn btn-primary text-white fw-bold w-100" id="confirmListedSelectionBtn">確認選擇</button>
-                        </div>
-                    </div>
-
-                    <!-- 7、快速搜尋 -->
-                    <div class="row g-3 mb-4">
-                        <div class="col-md-8">
-                            <label class="form-label text-white-50"><strong>7. 快速搜尋</strong></label>
-                            <select id="quickSearchSelect" class="form-select">
-                                <option value="">選擇熱門股票或搜尋記錄...</option>
-                                <!-- 搜尋歷史和熱門股票將由JavaScript動態生成 -->
-                            </select>
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label text-white-50"><strong>8. 選擇</strong></label>
-                            <button class="btn btn-primary text-white fw-bold w-100" id="applyQuickSearch">選擇</button>
-                        </div>
-                    </div>
-                    
+                    <!-- 隐藏元素：保留 JS 相容性 -->
+                    <select id="stockSelect" class="d-none"></select>
+                    <select id="listedStockSelect" class="d-none"></select>
+                    <select id="quickSearchSelect" class="d-none"></select>
                     <!-- 新增：用户已选择股票显示框 -->
                     <div id="selectedStockDisplay" class="selected-stock-display">
                         <div class="selected-stock-title">✅ 用戶已選擇股票</div>
@@ -1087,6 +1079,33 @@ document.addEventListener('DOMContentLoaded', () => {
     // 搜尋歷史
     let searchHistory = [];
 
+    // ================= 共用：選定股票 =================
+    async function selectStock(stockCode, stockName, knownType) {
+        updateCurrentSelectedStock(stockCode, stockName, knownType || currentCompanyType);
+        const detectionResult = await detectCompanyType(stockCode);
+        if (detectionResult && detectionResult.type !== 'not_found' && detectionResult.type !== 'unknown') {
+            const finalName = detectionResult.stock_name || stockName;
+            const finalType = detectionResult.type;
+            showToast(`✅ 已選擇：${finalName}`, 'success');
+            saveSearchHistory(stockCode, finalName, finalType);
+            updateCompanyTypeSelection(finalType);
+            updateCurrentSelectedStock(stockCode, finalName, finalType);
+            const searchInput = document.getElementById('searchStockInput');
+            if (searchInput) searchInput.value = stockCode;
+        } else {
+            let autoType = knownType || 'otc';
+            let autoName = stockName || stockCode;
+            if (!knownType && /^\d{4}$/.test(stockCode)) {
+                autoType = stockCode.startsWith('6') ? 'emerging' : 'otc';
+                autoName = `${autoType === 'otc' ? '上櫃' : '興櫃'}公司 ${stockCode}`;
+            }
+            showToast(`已選擇：${autoName}`, 'warning');
+            saveSearchHistory(stockCode, autoName, autoType);
+            updateCompanyTypeSelection(autoType);
+            updateCurrentSelectedStock(stockCode, autoName, autoType);
+        }
+    }
+
     // ================= 分析歷史管理 =================
     let analysisHistory = {
         news: null,
@@ -1187,49 +1206,55 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
     
-    // 更新快速搜尋下拉選單
+    // 更新快速搜尋標籤列（取代原下拉選單）
     function updateQuickSearchSelect() {
+        // 同步隱藏的 select（保留 JS 相容性）
         const quickSearchSelect = document.getElementById('quickSearchSelect');
-        if (!quickSearchSelect) return;
-        
-        // 儲存當前選中的值
-        const currentValue = quickSearchSelect.value;
-        
-        // 清空選單
-        quickSearchSelect.innerHTML = '<option value="">選擇熱門股票或搜尋記錄...</option>';
-        
-        // 添加搜尋歷史
-        if (searchHistory.length > 0) {
-            const historyGroup = document.createElement('optgroup');
-            historyGroup.label = '最近搜尋';
-            
+        if (quickSearchSelect) {
+            quickSearchSelect.innerHTML = '<option value="">快速搜尋...</option>';
             searchHistory.forEach(item => {
-                const option = document.createElement('option');
-                option.value = item.code;
-                option.textContent = `${item.code} ${item.name} (${item.type === 'listed' ? '上市' : item.type === 'otc' ? '上櫃' : '興櫃'})`;
-                option.dataset.type = item.type;
-                historyGroup.appendChild(option);
+                const opt = document.createElement('option');
+                opt.value = item.code;
+                opt.textContent = `${item.code} ${item.name}`;
+                opt.dataset.type = item.type;
+                quickSearchSelect.appendChild(opt);
             });
-            
-            quickSearchSelect.appendChild(historyGroup);
         }
-        
-        // 添加熱門股票
-        const hotGroup = document.createElement('optgroup');
-        hotGroup.label = '熱門股票';
-        
-        hotStocks.forEach(stock => {
-            const option = document.createElement('option');
-            option.value = stock.code;
-            option.textContent = `${stock.code} ${stock.name}`;
-            option.dataset.type = stock.type;
-            hotGroup.appendChild(option);
+
+        // 渲染標籤列
+        const container = document.getElementById('recentSearchTags');
+        if (!container) return;
+        container.innerHTML = '';
+
+        const allItems = [];
+
+        if (searchHistory.length > 0) {
+            const label = document.createElement('span');
+            label.className = 'recent-tag-label';
+            label.textContent = '🕒 最近：';
+            container.appendChild(label);
+            searchHistory.slice(0, 8).forEach(item => allItems.push({ ...item, isHistory: true }));
+        } else {
+            const label = document.createElement('span');
+            label.className = 'recent-tag-label';
+            label.textContent = '🔥 熱門：';
+            container.appendChild(label);
+            hotStocks.slice(0, 8).forEach(s => allItems.push({ code: s.code, name: s.name, type: s.type, isHistory: false }));
+        }
+
+        allItems.forEach(item => {
+            const tag = document.createElement('button');
+            tag.type = 'button';
+            tag.className = `recent-tag ${item.type === 'listed' ? 'tag-listed' : item.type === 'otc' ? 'tag-otc' : 'tag-emerging'}`;
+            tag.textContent = `${item.code} ${item.name}`;
+            tag.title = item.type === 'listed' ? '上市' : item.type === 'otc' ? '上櫃' : '興櫃';
+            tag.addEventListener('click', async () => {
+                const searchInput = document.getElementById('searchStockInput');
+                if (searchInput) searchInput.value = item.code;
+                await selectStock(item.code, item.name, item.type);
+            });
+            container.appendChild(tag);
         });
-        
-        quickSearchSelect.appendChild(hotGroup);
-        
-        // 恢復之前選中的值
-        quickSearchSelect.value = currentValue;
     }
 
     // 保存分析歷史
@@ -3505,17 +3530,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
             `;
             
-            item.addEventListener('click', () => {
-                const searchInput = document.getElementById('searchStockInput');
-                if (searchInput) {
-                    searchInput.value = suggestion.code;
-                }
+        item.addEventListener('click', async () => {
+                // 直接選定股票，不需要再按任何確認鍵
                 suggestionsContainer.style.display = 'none';
-                
-                // 自動觸發搜索
-                setTimeout(() => {
-                    document.getElementById('confirmSearchBtn').click();
-                }, 100);
+                const searchInput = document.getElementById('searchStockInput');
+                if (searchInput) searchInput.value = suggestion.code;
+                await selectStock(suggestion.code, suggestion.name, suggestion.type);
             });
             
             suggestionsContainer.appendChild(item);
@@ -3767,165 +3787,30 @@ document.addEventListener('DOMContentLoaded', () => {
             showToast('請輸入股票代碼或名稱', 'error');
             return;
         }
-        
+
         const searchTerm = searchInput.value.trim();
         log(`搜索確認按鈕點擊: ${searchTerm}`);
-        
-        // 進行增強版模糊查詢
+
+        // 先在清單中模糊查詢
         const searchResults = performEnhancedFuzzySearch(searchTerm);
-        
-        if (searchResults.length > 0) {
-            log(`找到 ${searchResults.length} 個匹配結果`);
-            
-            // 更新股票選擇下拉選單
-            const stockSelect = document.getElementById('stockSelect');
-            stockSelect.innerHTML = '<option value="">請選擇股票</option>';
-            
-            searchResults.forEach(result => {
-                const option = document.createElement('option');
-                option.value = result.code;
-                option.textContent = `${result.code} ${result.name} (${result.type === 'listed' ? '上市' : result.type === 'otc' ? '上櫃' : '興櫃'})`;
-                option.dataset.type = result.type;
-                stockSelect.appendChild(option);
-            });
-            
-            // 自動選擇第一個結果
-            if (searchResults.length === 1) {
-                const firstResult = searchResults[0];
-                stockSelect.value = firstResult.code;
-                
-                // 首先更新全局變數
-                updateCurrentSelectedStock(firstResult.code, firstResult.name, firstResult.type);
-                
-                showToast(`已找到: ${firstResult.name}`, 'success');
-                
-                // 自動檢測公司類型
-                const detectionResult = await detectCompanyType(firstResult.code);
-                if (detectionResult && detectionResult.type !== 'not_found') {
-                    // 自動設置公司類型
-                    updateCompanyTypeSelection(detectionResult.type);
-                    
-                    // 更新全局變數
-                    updateCurrentSelectedStock(firstResult.code, detectionResult.stock_name || firstResult.name, detectionResult.type);
-                }
-                
-                // 自動點擊確認選擇按鈕
-                setTimeout(() => {
-                    document.getElementById('confirmSelectionBtn').click();
-                }, 500);
-            } else {
-                showToast(`找到 ${searchResults.length} 個匹配結果，請選擇一個`, 'info');
-            }
-            
+
+        if (searchResults.length === 1) {
+            // 唯一結果 → 直接選定
+            await selectStock(searchResults[0].code, searchResults[0].name, searchResults[0].type);
+        } else if (searchResults.length > 1) {
+            // 多個結果 → 顯示建議下拉讓用戶點選
+            showSearchSuggestions(searchTerm);
+            showToast(`找到 ${searchResults.length} 個匹配結果，請點選一個`, 'info');
         } else {
-            log(`在清單中未找到匹配，開始公司類型檢測: ${searchTerm}`);
-            
-            // 嘗試從搜索詞中提取股票代碼
+            // 清單中無結果 → 嘗試提取四位數代碼直接偵測
             let stockCode = searchTerm;
             if (!/^\d{4}$/.test(searchTerm)) {
                 const codeMatch = searchTerm.match(/\d{4}/);
-                if (codeMatch) {
-                    stockCode = codeMatch[0];
-                    log(`從搜索詞中提取股票代碼: ${stockCode}`);
-                }
+                if (codeMatch) stockCode = codeMatch[0];
             }
-            
-            const detectionResult = await detectCompanyType(stockCode);
-            
-            if (detectionResult && detectionResult.type !== 'not_found' && detectionResult.type !== 'unknown') {
-                const typeName = detectionResult.type === 'listed' ? '上市' : detectionResult.type === 'otc' ? '上櫃' : '興櫃';
-                const displayName = detectionResult.stock_name || searchTerm;
-                
-                log(`找到${typeName}公司: ${displayName}`);
-                
-                // 首先更新全局變數
-                updateCurrentSelectedStock(stockCode, displayName, detectionResult.type);
-                
-                showToast(`找到${typeName}公司: ${displayName}`, 'success');
-                
-                // 保存到搜尋歷史
-                saveSearchHistory(stockCode, displayName, detectionResult.type);
-                
-                // 自動設置公司類型
-                updateCompanyTypeSelection(detectionResult.type);
-                
-                // 嘗試在主股票選擇中找到或添加選項
-                const stockSelect = document.getElementById('stockSelect');
-                if (stockSelect) {
-                    // 檢查是否已經有這個選項
-                    let existingOption = null;
-                    for (let i = 0; i < stockSelect.options.length; i++) {
-                        if (stockSelect.options[i].value === stockCode) {
-                            existingOption = stockSelect.options[i];
-                            break;
-                        }
-                    }
-                    
-                    if (!existingOption) {
-                        // 創建新選項
-                        const option = document.createElement('option');
-                        option.value = stockCode;
-                        option.textContent = `${stockCode} ${displayName}`;
-                        option.dataset.type = detectionResult.type;
-                        stockSelect.appendChild(option);
-                    }
-                    
-                    // 選中這個選項
-                    stockSelect.value = stockCode;
-                    
-                    // 自動點擊確認選擇按鈕
-                    setTimeout(() => {
-                        document.getElementById('confirmSelectionBtn').click();
-                    }, 500);
-                }
-                
-            } else {
-                log(`未找到公司: ${searchTerm}`);
-                
-                // 修改：自動判斷為上櫃/興櫃公司
-                let autoType = 'otc';
-                let autoName = searchTerm;
-                
-                if (/^\d{4}$/.test(stockCode)) {
-                    if (stockCode.startsWith('6')) {
-                        autoType = 'emerging';
-                        autoName = `興櫃公司 ${stockCode}`;
-                    } else {
-                        autoType = 'otc';
-                        autoName = `上櫃公司 ${stockCode}`;
-                    }
-                }
-                
-                // 更新全局變數
-                updateCurrentSelectedStock(stockCode, autoName, autoType);
-                
-                showToast(`已選擇: ${autoName} (${autoType === 'otc' ? '上櫃' : '興櫃'}公司)`, 'warning');
-                log(`自動判斷為: ${autoType} - ${autoName}`);
-                
-                // 保存到搜尋歷史
-                saveSearchHistory(stockCode, autoName, autoType);
-                
-                // 自動設置公司類型
-                updateCompanyTypeSelection(autoType);
-                
-                // 仍然嘗試在清單中添加
-                const stockSelect = document.getElementById('stockSelect');
-                if (stockSelect) {
-                    const option = document.createElement('option');
-                    option.value = stockCode;
-                    option.textContent = `${stockCode} ${autoName}`;
-                    option.dataset.type = autoType;
-                    stockSelect.appendChild(option);
-                    stockSelect.value = stockCode;
-                    
-                    // 自動點擊確認選擇按鈕
-                    setTimeout(() => {
-                        document.getElementById('confirmSelectionBtn').click();
-                    }, 500);
-                }
-            }
+            log(`在清單中未找到，直接偵測: ${stockCode}`);
+            await selectStock(stockCode, '', null);
         }
-    });
     
     // 執行增強版模糊查詢（支援中英文，優先顯示以搜索詞開頭的股票名稱）
     function performEnhancedFuzzySearch(searchTerm) {
