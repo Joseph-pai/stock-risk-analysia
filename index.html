@@ -1771,10 +1771,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 statusElement.innerHTML = '<span style="color:#28a745">✓ FinMind Token 有效，連線成功</span>';
                 log('FinMind Token 測試成功');
                 
-                // 重新載入股票數據
+                // 重新載入股票數據後更新標籤列
                 await loadStockData();
-                updateStockSelect();
-                updateListedStockSelect();
+                updateQuickSearchSelect();
             } else {
                 throw new Error('API 返回無效數據');
             }
