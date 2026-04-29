@@ -12,7 +12,6 @@ exports.handler = async (event, context) => {
     }
 
     const stockId = event.queryStringParameters?.stock_id;
-    const companyType = event.queryStringParameters?.company_type || '';
     // 優先讀取環境變數中的 Token，其次才是網址參數
     const token = process.env.FINMIND_TOKEN || process.env.TOKEN || event.queryStringParameters?.token || '';
     const dataType = event.queryStringParameters?.data_type || 'margin'; // margin | institutional
@@ -30,9 +29,9 @@ exports.handler = async (event, context) => {
     try {
         let result;
         if (dataType === 'margin') {
-            result = await fetchMarginData(stockId, token, companyType);
+            result = await fetchMarginData(stockId, token);
         } else if (dataType === 'institutional') {
-            result = await fetchInstitutionalData(stockId, token, companyType);
+            result = await fetchInstitutionalData(stockId, token);
         } else {
             return {
                 statusCode: 400,
@@ -70,21 +69,8 @@ function getRecentWorkday() {
     return `${y}${m}${dd}`;
 }
 
-// ── 工具：取得最近工作日（民國年格式 YYY/MM/DD）─────────────────────────
-function getTaiwanDate() {
-    const d = new Date();
-    if (d.getHours() < 9) d.setDate(d.getDate() - 1);
-    while (d.getDay() === 0 || d.getDay() === 6) {
-        d.setDate(d.getDate() - 1);
-    }
-    const twYear = d.getFullYear() - 1911;
-    const m = String(d.getMonth() + 1).padStart(2, '0');
-    const dd = String(d.getDate()).padStart(2, '0');
-    return `${twYear}/${m}/${dd}`;
-}
-
 // ── 融資餘額 ──────────────────────────────────────────────────────
-async function fetchMarginData(stockId, token, companyType) {
+async function fetchMarginData(stockId, token) {
 
     // 1️⃣ FinMind（需要 token）
     if (token) {
@@ -111,10 +97,8 @@ async function fetchMarginData(stockId, token, companyType) {
                     let trend = 'stable';
                     if (sorted.length >= 3) {
                         const vals = sorted.slice(0, 5).map(d => parseInt(d.MarginPurchaseTodayBalance) || 0);
-                        const isAllEqual = vals.every(v => v === vals[0]);
-                        // vals[0] 是最新，vals[1] 是前一天。增加代表 vals[0] >= vals[1]
-                        const up   = !isAllEqual && vals.every((v, i) => i === 0 || vals[i - 1] >= v);
-                        const down = !isAllEqual && vals.every((v, i) => i === 0 || vals[i - 1] <= v);
+                        const up   = vals.every((v, i) => i === 0 || v >= vals[i - 1]);
+                        const down = vals.every((v, i) => i === 0 || v <= vals[i - 1]);
                         if (up)   trend = 'increasing';
                         if (down) trend = 'decreasing';
                     }
@@ -131,74 +115,46 @@ async function fetchMarginData(stockId, token, companyType) {
         }
     }
 
-    // 2️⃣ TWSE / TPEx 備援
+    // 2️⃣ TWSE 備援
     try {
-        if (companyType === 'otc') {
-            const twDate = getTaiwanDate();
-            const url = `https://www.tpex.org.tw/web/stock/margin_trading/margin_balance/margin_bal_result.php?l=zh-tw&o=json&d=${twDate}&s=0,asc,0`;
-            const res = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0' }, timeout: 10000 });
-            if (res.ok) {
-                const json = await res.json();
-                if (json.aaData && json.aaData.length > 0) {
-                    const found = json.aaData.find(row => row[0] === stockId);
-                    if (found) {
-                        const parse = (s) => parseInt(String(s).replace(/,/g, '')) || 0;
-                        const balance = parse(found[6]);
-                        const prevBal = parse(found[2]);
-                        const change = balance - prevBal;
-                        return {
-                            success: true,
-                            source: 'TPEx',
-                            data: {
-                                margin_balance: balance,
-                                margin_change: change,
-                                margin_trend: change > 0 ? 'increasing' : change < 0 ? 'decreasing' : 'stable',
-                                date: twDate
-                            }
-                        };
+        const dateStr = getRecentWorkday();
+        const url = `https://www.twse.com.tw/rwd/zh/marginTrading/MI_MARGN?date=${dateStr}&stockNo=${stockId}&response=json`;
+        const res = await fetch(url, {
+            headers: { 'User-Agent': 'Mozilla/5.0' },
+            timeout: 10000
+        });
+
+        if (res.ok) {
+            const json = await res.json();
+            if (json.stat === 'OK' && json.data && json.data.length > 0) {
+                // 欄位順序: [0]日期 [4]融資餘額
+                const rows = json.data;
+                const parse = (row) => parseInt(String(row[4]).replace(/,/g, '')) || 0;
+                const balance = parse(rows[rows.length - 1]);
+                const prevBal = rows.length > 1 ? parse(rows[rows.length - 2]) : balance;
+                const change  = balance - prevBal;
+
+                return {
+                    success: true,
+                    source: 'TWSE',
+                    data: {
+                        margin_balance: balance,
+                        margin_change: change,
+                        margin_trend: change > 0 ? 'increasing' : change < 0 ? 'decreasing' : 'stable',
+                        date: dateStr
                     }
-                }
-            }
-        } else {
-            const dateStr = getRecentWorkday();
-            const url = `https://www.twse.com.tw/rwd/zh/marginTrading/MI_MARGN?date=${dateStr}&stockNo=${stockId}&response=json`;
-            const res = await fetch(url, {
-                headers: { 'User-Agent': 'Mozilla/5.0' },
-                timeout: 10000
-            });
-
-            if (res.ok) {
-                const json = await res.json();
-                if (json.stat === 'OK' && json.data && json.data.length > 0) {
-                    // 欄位順序: [0]日期 [4]融資餘額
-                    const rows = json.data;
-                    const parse = (row) => parseInt(String(row[4]).replace(/,/g, '')) || 0;
-                    const balance = parse(rows[rows.length - 1]);
-                    const prevBal = rows.length > 1 ? parse(rows[rows.length - 2]) : balance;
-                    const change  = balance - prevBal;
-
-                    return {
-                        success: true,
-                        source: 'TWSE',
-                        data: {
-                            margin_balance: balance,
-                            margin_change: change,
-                            margin_trend: change > 0 ? 'increasing' : change < 0 ? 'decreasing' : 'stable',
-                            date: dateStr
-                        }
-                    };
-                }
+                };
             }
         }
     } catch (e) {
-        console.log('備援 margin 失敗:', e.message);
+        console.log('TWSE margin 失敗:', e.message);
     }
 
     return { success: false, source: 'none', error: '資料無法取得' };
 }
 
 // ── 三大法人 ──────────────────────────────────────────────────────
-async function fetchInstitutionalData(stockId, token, companyType) {
+async function fetchInstitutionalData(stockId, token) {
 
     // 1️⃣ FinMind（需要 token）
     if (token) {
@@ -269,76 +225,45 @@ async function fetchInstitutionalData(stockId, token, companyType) {
         }
     }
 
-    // 2️⃣ TWSE / TPEx 備援
+    // 2️⃣ TWSE 備援
     try {
-        if (companyType === 'otc') {
-            const twDate = getTaiwanDate();
-            const url = `https://www.tpex.org.tw/web/stock/3insti/daily_trade/3itrade_hedge_result.php?l=zh-tw&o=json&d=${twDate}&s=0,asc,0`;
-            const res = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0' }, timeout: 10000 });
-            if (res.ok) {
-                const json = await res.json();
-                if (json.aaData && json.aaData.length > 0) {
-                    const found = json.aaData.find(row => row[0] === stockId);
-                    if (found) {
-                        const parseNum = (s) => parseInt(String(s || '0').replace(/,/g, '').replace(/[−‐]/g, '-')) || 0;
-                        const foreignNet = parseNum(found[10]);
-                        const trustNet = parseNum(found[13]);
-                        const dealerNet = parseNum(found[22]);
-                        
-                        return {
-                            success: true,
-                            source: 'TPEx',
-                            data: {
-                                foreign_net: foreignNet,
-                                foreign_consecutive: null,
-                                trust_net: trustNet,
-                                trust_consecutive: null,
-                                dealer_net: dealerNet,
-                                date: twDate
-                            }
-                        };
+        const dateStr = getRecentWorkday();
+        const url = `https://www.twse.com.tw/rwd/zh/fund/TWT38U?date=${dateStr}&stockNo=${stockId}&response=json`;
+        const res = await fetch(url, {
+            headers: { 'User-Agent': 'Mozilla/5.0' },
+            timeout: 10000
+        });
+
+        if (res.ok) {
+            const json = await res.json();
+            if (json.stat === 'OK' && json.data && json.data.length > 0) {
+                let foreignNet = 0, trustNet = 0, dealerNet = 0;
+                json.data.forEach(row => {
+                    // 欄位: [0]名稱 [1]買 [2]賣 [3]買賣差  (數值含逗號，可能含−全形負號)
+                    const parseNum = (s) => parseInt(String(s || '0').replace(/,/g, '').replace(/[−‐]/g, '-')) || 0;
+                    const name = String(row[0] || '');
+                    const net  = parseNum(row[3]);
+                    if (name.includes('外資'))       foreignNet += net;
+                    else if (name.includes('投信'))  trustNet   += net;
+                    else if (name.includes('自營'))  dealerNet  += net;
+                });
+
+                return {
+                    success: true,
+                    source: 'TWSE',
+                    data: {
+                        foreign_net: foreignNet,
+                        foreign_consecutive: null, // 單日無法計算
+                        trust_net: trustNet,
+                        trust_consecutive: null,
+                        dealer_net: dealerNet,
+                        date: dateStr
                     }
-                }
-            }
-        } else {
-            const dateStr = getRecentWorkday();
-            const url = `https://www.twse.com.tw/rwd/zh/fund/TWT38U?date=${dateStr}&stockNo=${stockId}&response=json`;
-            const res = await fetch(url, {
-                headers: { 'User-Agent': 'Mozilla/5.0' },
-                timeout: 10000
-            });
-
-            if (res.ok) {
-                const json = await res.json();
-                if (json.stat === 'OK' && json.data && json.data.length > 0) {
-                    let foreignNet = 0, trustNet = 0, dealerNet = 0;
-                    json.data.forEach(row => {
-                        // 欄位: [0]名稱 [1]買 [2]賣 [3]買賣差  (數值含逗號，可能含−全形負號)
-                        const parseNum = (s) => parseInt(String(s || '0').replace(/,/g, '').replace(/[−‐]/g, '-')) || 0;
-                        const name = String(row[0] || '');
-                        const net  = parseNum(row[3]);
-                        if (name.includes('外資'))       foreignNet += net;
-                        else if (name.includes('投信'))  trustNet   += net;
-                        else if (name.includes('自營'))  dealerNet  += net;
-                    });
-
-                    return {
-                        success: true,
-                        source: 'TWSE',
-                        data: {
-                            foreign_net: foreignNet,
-                            foreign_consecutive: null, // 單日無法計算
-                            trust_net: trustNet,
-                            trust_consecutive: null,
-                            dealer_net: dealerNet,
-                            date: dateStr
-                        }
-                    };
-                }
+                };
             }
         }
     } catch (e) {
-        console.log('備援 institutional 失敗:', e.message);
+        console.log('TWSE institutional 失敗:', e.message);
     }
 
     return { success: false, source: 'none', error: '資料無法取得' };

@@ -1435,8 +1435,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    stock_code: stockCode.trim(),
-                    scope: currentCompanyType
+                    stock_code: stockCode.trim()
                 })
             });
             
@@ -1567,12 +1566,6 @@ document.addEventListener('DOMContentLoaded', () => {
         currentCompanyType = selectedType;
         
         log(`公司類型變更為: ${selectedType}`);
-
-        // 當切換範圍時，若輸入框有值，立即更新建議清單 (鎖定搜尋範圍效果)
-        const searchInput = document.getElementById('searchStockInput');
-        if (searchInput && searchInput.value) {
-            showSearchSuggestions(searchInput.value);
-        }
         
         // 更新UI狀態
         const stockCategory = document.getElementById('stockCategory');
@@ -3403,8 +3396,8 @@ document.addEventListener('DOMContentLoaded', () => {
         // 從股票數據中搜索
         let suggestions = [];
         
-        // 搜索上市公司 (當鎖定為非上市公司時，不顯示上市建議)
-        if ((currentCompanyType === 'auto' || currentCompanyType === 'listed') && stockData.listed && stockData.listed.length > 0) {
+        // 搜索上市公司
+        if (stockData.listed && stockData.listed.length > 0) {
             stockData.listed.forEach(stock => {
                 const stockCode = stock.stock_id || '';
                 const stockName = stock.stock_name || '';
@@ -4483,13 +4476,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // ================= 持倉/空倉決策面板 =================
 
-    async function fetchChipsData(stockId, companyType) {
+    async function fetchChipsData(stockId) {
         try {
             const token = (typeof TOKEN !== 'undefined' ? TOKEN : '') || '';
-            const typeParam = companyType ? `&company_type=${companyType}` : '';
             const [marginRes, instRes] = await Promise.all([
-                fetch(`/.netlify/functions/fetch-chips?stock_id=${stockId}&data_type=margin&token=${token}${typeParam}`),
-                fetch(`/.netlify/functions/fetch-chips?stock_id=${stockId}&data_type=institutional&token=${token}${typeParam}`)
+                fetch(`/.netlify/functions/fetch-chips?stock_id=${stockId}&data_type=margin&token=${token}`),
+                fetch(`/.netlify/functions/fetch-chips?stock_id=${stockId}&data_type=institutional&token=${token}`)
             ]);
             const margin = await marginRes.json();
             const institutional = await instRes.json();
@@ -4505,9 +4497,7 @@ document.addEventListener('DOMContentLoaded', () => {
             btn.disabled = true;
             btn.textContent = '獲取中...';
         }
-        // 從全域變數或緩存中取得目前的 companyType
-        const companyType = window.financialCache?._metadata?.company_type || currentCompanyType || 'auto';
-        const chips = await fetchChipsData(stockId, companyType);
+        const chips = await fetchChipsData(stockId);
         renderChipsSection(stockId, chips);
         // 3 秒 cooldown
         setTimeout(() => {
@@ -4706,8 +4696,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const prevMargin   = mKeys.length > 1 ? marginQ[mKeys[mKeys.length - 2]] : null;
 
         // ── 籌碼面（並行取得）────────────────────────────────
-        const companyType = financialCache?._metadata?.company_type || currentCompanyType || 'auto';
-        const chips = await fetchChipsData(symbol, companyType);
+        const chips = await fetchChipsData(symbol);
 
         // ── 空倉檢查清單 ──────────────────────────────────────
         let redFlags = 0;

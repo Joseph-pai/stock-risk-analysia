@@ -17,9 +17,9 @@ exports.handler = async (event, context) => {
         };
     }
 
-    const body = event.body ? JSON.parse(event.body) : {};
-    const stockCode = event.queryStringParameters?.stock_code || body.stock_code;
-    const scope = event.queryStringParameters?.scope || body.scope || 'auto';
+    // 獲取股票代碼
+    const stockCode = event.queryStringParameters?.stock_code || 
+                     (event.body ? JSON.parse(event.body).stock_code : null);
 
     if (!stockCode) {
         return {
@@ -41,63 +41,57 @@ exports.handler = async (event, context) => {
         };
 
         // 1. 先嘗試查詢上市公司（TWSE）
-        if (scope === 'auto' || scope === 'listed') {
-            console.log(`嘗試查詢上市公司 (TWSE): ${stockCode}`);
-            const listedResult = await checkListedCompany(stockCode);
+        console.log(`嘗試查詢上市公司 (TWSE): ${stockCode}`);
+        const listedResult = await checkListedCompany(stockCode);
+        
+        if (listedResult.found) {
+            console.log(`✅ 找到上市公司: ${listedResult.stock_name}`);
+            result.type = 'listed';
+            result.stock_name = listedResult.stock_name;
+            result.source = 'TWSE';
+            result.suggestions = listedResult.suggestions || [];
             
-            if (listedResult.found) {
-                console.log(`✅ 找到上市公司: ${listedResult.stock_name}`);
-                result.type = 'listed';
-                result.stock_name = listedResult.stock_name;
-                result.source = 'TWSE';
-                result.suggestions = listedResult.suggestions || [];
-                
-                return {
-                    statusCode: 200,
-                    headers,
-                    body: JSON.stringify(result)
-                };
-            }
+            return {
+                statusCode: 200,
+                headers,
+                body: JSON.stringify(result)
+            };
         }
 
         // 2. 嘗試查詢上櫃公司（TPEx OTC）
-        if (scope === 'auto' || scope === 'otc') {
-            console.log(`嘗試查詢上櫃公司 (TPEx OTC): ${stockCode}`);
-            const otcResult = await checkOTCCompany(stockCode);
+        console.log(`嘗試查詢上櫃公司 (TPEx OTC): ${stockCode}`);
+        const otcResult = await checkOTCCompany(stockCode);
+        
+        if (otcResult.found) {
+            console.log(`✅ 找到上櫃公司: ${otcResult.stock_name}`);
+            result.type = 'otc';
+            result.stock_name = otcResult.stock_name;
+            result.source = 'TPEx_OTC';
+            result.suggestions = otcResult.suggestions || [];
             
-            if (otcResult.found) {
-                console.log(`✅ 找到上櫃公司: ${otcResult.stock_name}`);
-                result.type = 'otc';
-                result.stock_name = otcResult.stock_name;
-                result.source = 'TPEx_OTC';
-                result.suggestions = otcResult.suggestions || [];
-                
-                return {
-                    statusCode: 200,
-                    headers,
-                    body: JSON.stringify(result)
-                };
-            }
+            return {
+                statusCode: 200,
+                headers,
+                body: JSON.stringify(result)
+            };
         }
 
         // 3. 嘗試查詢興櫃公司（TPEx Emerging）
-        if (scope === 'auto' || scope === 'emerging') {
-            console.log(`嘗試查詢興櫃公司 (TPEx Emerging): ${stockCode}`);
-            const emergingResult = await checkEmergingCompany(stockCode);
+        console.log(`嘗試查詢興櫃公司 (TPEx Emerging): ${stockCode}`);
+        const emergingResult = await checkEmergingCompany(stockCode);
+        
+        if (emergingResult.found) {
+            console.log(`✅ 找到興櫃公司: ${emergingResult.stock_name}`);
+            result.type = 'emerging';
+            result.stock_name = emergingResult.stock_name;
+            result.source = 'TPEx_EM';
+            result.suggestions = emergingResult.suggestions || [];
             
-            if (emergingResult.found) {
-                console.log(`✅ 找到興櫃公司: ${emergingResult.stock_name}`);
-                result.type = 'emerging';
-                result.stock_name = emergingResult.stock_name;
-                result.source = 'TPEx_EM';
-                result.suggestions = emergingResult.suggestions || [];
-                
-                return {
-                    statusCode: 200,
-                    headers,
-                    body: JSON.stringify(result)
-                };
-            }
+            return {
+                statusCode: 200,
+                headers,
+                body: JSON.stringify(result)
+            };
         }
 
         // 4. 如果都沒找到，根據股票代碼特徵自動判斷
@@ -254,8 +248,8 @@ async function checkListedCompany(stockCode) {
 // 檢查是否為上櫃公司（TPEx OTC）
 async function checkOTCCompany(stockCode) {
     try {
-        // 上櫃公司查詢 - 使用TPEx公開API (包含KY股)
-        const tpexUrl = 'https://www.tpex.org.tw/openapi/v1/mopsfin_t187ap03_O';
+        // 上櫃公司查詢 - 使用TPEx公開API
+        const tpexUrl = 'https://www.tpex.org.tw/openapi/v1/tpex_mainboard_quotes';
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 10000);
         
@@ -282,11 +276,11 @@ async function checkOTCCompany(stockCode) {
 
         const data = await response.json();
         
-        // TPEx API返回的數據格式為 JSON 陣列
+        // TPEx API返回的數據格式可能不同，需要根據實際情況調整
         if (Array.isArray(data)) {
             const foundStock = data.find(item => {
-                const code = item.SecuritiesCompanyCode;
-                const name = item.CompanyName || item.CompanyAbbreviation;
+                const code = item.Code || item.Symbol || item.證券代號;
+                const name = item.Name || item.公司名稱 || item.證券名稱;
                 
                 return code === stockCode || 
                        name === stockCode ||
@@ -296,8 +290,8 @@ async function checkOTCCompany(stockCode) {
             if (foundStock) {
                 return {
                     found: true,
-                    stock_name: foundStock.CompanyAbbreviation || foundStock.CompanyName,
-                    stock_id: foundStock.SecuritiesCompanyCode,
+                    stock_name: foundStock.Name || foundStock.證券名稱 || foundStock.公司名稱,
+                    stock_id: foundStock.Code || foundStock.Symbol || foundStock.證券代號,
                     source: 'TPEx_OTC'
                 };
             }
